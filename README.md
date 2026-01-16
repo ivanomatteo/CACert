@@ -126,4 +126,4 @@ Firefox uses its own certificate store by default.
 
 - For development/testing domains, prefer `.test` (see RFC 6761: https://www.rfc-editor.org/rfc/rfc6761).
 - Wildcard certificates should be of the form `*.domain.tld` and are valid for all second-level subdomains.
-- This is for local development/testing only. Do not use for public production services.
+- This project is for local development/testing only. Do not use for public production services.
