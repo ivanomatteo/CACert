@@ -1,0 +1,51 @@
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir               = $ENV::ROOT_DIR/ca
+certs             = $dir/certs
+crl_dir           = $dir/crl
+new_certs_dir     = $dir/newcerts
+database          = $dir/index.txt
+serial            = $dir/serial
+crlnumber         = $dir/crlnumber
+private_key       = $dir/private/ca.key.pem
+certificate       = $dir/certs/ca.cert.pem
+
+default_md        = sha256
+name_opt          = ca_default
+cert_opt          = ca_default
+default_days      = 825
+preserve          = no
+policy            = policy_loose
+copy_extensions   = copy
+unique_subject    = no
+
+[ policy_loose ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ req ]
+prompt             = no
+distinguished_name = req_dn
+
+[ req_dn ]
+CN = Local Dev CA
+
+[ v3_ca ]
+basicConstraints = critical, CA:true
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+
+[ server_cert ]
+basicConstraints = critical, CA:false
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer

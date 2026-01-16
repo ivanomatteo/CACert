@@ -1,0 +1,10 @@
+/ca/
+/issued/
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+*.log
+*.tmp
+.DS_Store
