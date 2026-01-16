@@ -2,7 +2,8 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <hostname> <days>" >&2
+  echo "Usage: $0 <hostname> <duration>" >&2
+  echo "Duration examples: 90d, 3m, 1y (default unit: days)" >&2
   exit 1
 fi
 
@@ -17,7 +18,7 @@ KEY_BITS=2048
 # KEY_ALGO="ed25519"                 # Compatibility: medium-low. Security: 9/10. Modern, fast.
 
 HOSTNAME="$1"
-DAYS="$2"
+DURATION="$2"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ROOT_DIR
@@ -28,8 +29,22 @@ if [[ ! -f "$CA_DIR/private/ca.key.pem" || ! -f "$CA_DIR/certs/ca.cert.pem" ]]; 
   exit 1
 fi
 
-if ! [[ "$DAYS" =~ ^[0-9]+$ ]]; then
-  echo "Days must be a positive integer." >&2
+if [[ "$DURATION" =~ ^[0-9]+$ ]]; then
+  DAYS="$DURATION"
+elif [[ "$DURATION" =~ ^([0-9]+)([dmy])$ ]]; then
+  VALUE="${BASH_REMATCH[1]}"
+  UNIT="${BASH_REMATCH[2]}"
+  case "$UNIT" in
+    d) DAYS="$VALUE" ;;
+    m) DAYS="$((VALUE * 30))" ;;
+    y) DAYS="$((VALUE * 365))" ;;
+    *)
+      echo "Unsupported duration unit: $UNIT" >&2
+      exit 1
+      ;;
+  esac
+else
+  echo "Invalid duration. Use number of days or suffix with d/m/y." >&2
   exit 1
 fi
 
