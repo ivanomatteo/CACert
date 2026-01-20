@@ -69,7 +69,30 @@ Outputs are written to `issued/<hostname>/` (or `issued/[star].example.local/` f
 - `*.cert.pem`
 - `*.fullchain.pem` (host cert + CA cert)
 
-### 3) Change CA master password
+### 3) Issue a client certificate or CSR
+
+Use this when you need a client certificate (for mTLS) or just a CSR to send to another CA.
+
+```bash
+./issue_cert_client.sh client1.local 90
+./issue_cert_client.sh client1.local 90d
+./issue_cert_client.sh client1.local 6m
+./issue_cert_client.sh client1.local 1y
+```
+
+Outputs are written to `issued/<hostname>/`, including:
+- `*.key.pem`
+- `*.csr.pem`
+- `*.cert.pem`
+- `*.fullchain.pem` (client cert + CA cert)
+
+If you only need a CSR and key (no signing), use:
+
+```bash
+./issue_cert_client.sh --csr-only client1.local
+```
+
+### 4) Change CA master password
 
 ```bash
 ./change_ca_password.sh

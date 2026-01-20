@@ -1,10 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <hostname> <duration>" >&2
-  echo "Duration examples: 90d, 3m, 1y (default unit: days)" >&2
-  exit 1
+CSR_ONLY=0
+if [[ "${1:-}" == "--csr-only" ]]; then
+  CSR_ONLY=1
+  shift
+fi
+
+if [[ $CSR_ONLY -eq 1 ]]; then
+  if [[ $# -lt 1 ]]; then
+    echo "Usage: $0 [--csr-only] <hostname> [duration]" >&2
+    echo "Duration examples: 90d, 3m, 1y (default unit: days)" >&2
+    exit 1
+  fi
+else
+  if [[ $# -ne 2 ]]; then
+    echo "Usage: $0 [--csr-only] <hostname> <duration>" >&2
+    echo "Duration examples: 90d, 3m, 1y (default unit: days)" >&2
+    exit 1
+  fi
 fi
 
 # Key generation parameters.
@@ -18,43 +32,47 @@ KEY_BITS=2048
 # KEY_ALGO="ed25519"                 # Compatibility: medium-low. Security: 9/10. Modern, fast.
 
 HOSTNAME="$1"
-DURATION="$2"
+DURATION="${2:-}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ROOT_DIR
 source "$ROOT_DIR/cfg.sh"
 
-CA_DIR="$ROOT_DIR/ca"
-if [[ ! -f "$CA_DIR/private/ca.key.pem" || ! -f "$CA_DIR/certs/ca.cert.pem" ]]; then
-  echo "CA not initialized. Run ./init_ca.sh first." >&2
-  exit 1
-fi
+if [[ $CSR_ONLY -eq 0 ]]; then
+  CA_DIR="$ROOT_DIR/ca"
+  if [[ ! -f "$CA_DIR/private/ca.key.pem" || ! -f "$CA_DIR/certs/ca.cert.pem" ]]; then
+    echo "CA not initialized. Run ./init_ca.sh first." >&2
+    exit 1
+  fi
 
-if [[ "$DURATION" =~ ^[0-9]+$ ]]; then
-  DAYS="$DURATION"
-elif [[ "$DURATION" =~ ^([0-9]+)([dmy])$ ]]; then
-  VALUE="${BASH_REMATCH[1]}"
-  UNIT="${BASH_REMATCH[2]}"
-  case "$UNIT" in
-    d) DAYS="$VALUE" ;;
-    m) DAYS="$((VALUE * 30))" ;;
-    y) DAYS="$((VALUE * 365))" ;;
-    *)
-      echo "Unsupported duration unit: $UNIT" >&2
-      exit 1
-      ;;
-  esac
-else
-  echo "Invalid duration. Use number of days or suffix with d/m/y." >&2
-  exit 1
+  if [[ "$DURATION" =~ ^[0-9]+$ ]]; then
+    DAYS="$DURATION"
+  elif [[ "$DURATION" =~ ^([0-9]+)([dmy])$ ]]; then
+    VALUE="${BASH_REMATCH[1]}"
+    UNIT="${BASH_REMATCH[2]}"
+    case "$UNIT" in
+      d) DAYS="$VALUE" ;;
+      m) DAYS="$((VALUE * 30))" ;;
+      y) DAYS="$((VALUE * 365))" ;;
+      *)
+        echo "Unsupported duration unit: $UNIT" >&2
+        exit 1
+        ;;
+    esac
+  else
+    echo "Invalid duration. Use number of days or suffix with d/m/y." >&2
+    exit 1
+  fi
 fi
 
 SAFE_HOSTNAME="${HOSTNAME//\*/[star]}"
 OUT_DIR="$ROOT_DIR/issued/$SAFE_HOSTNAME"
 mkdir -p "$OUT_DIR"
 
-read -r -s -p "CA master password: " CA_PASS
-printf '\n'
+if [[ $CSR_ONLY -eq 0 ]]; then
+  read -r -s -p "CA master password: " CA_PASS
+  printf '\n'
+fi
 
 case "$KEY_ALGO" in
   rsa)
@@ -98,6 +116,15 @@ openssl req -new -key "$OUT_DIR/$SAFE_HOSTNAME.key.pem" \
   -out "$OUT_DIR/$SAFE_HOSTNAME.csr.pem" \
   -config "$CSR_CONF"
 
+chmod 644 "$OUT_DIR/$SAFE_HOSTNAME.csr.pem"
+
+if [[ $CSR_ONLY -eq 1 ]]; then
+  echo "Key and CSR created:"
+  echo "  $OUT_DIR/$SAFE_HOSTNAME.key.pem"
+  echo "  $OUT_DIR/$SAFE_HOSTNAME.csr.pem"
+  exit 0
+fi
+
 openssl ca -config "$ROOT_DIR/openssl.cnf" \
   -batch -passin pass:"$CA_PASS" \
   -extensions server_cert -days "$DAYS" -notext -md sha256 \
@@ -106,6 +133,6 @@ openssl ca -config "$ROOT_DIR/openssl.cnf" \
 
 cat "$OUT_DIR/$SAFE_HOSTNAME.cert.pem" "$CA_DIR/certs/ca.cert.pem" > "$OUT_DIR/$SAFE_HOSTNAME.fullchain.pem"
 
-chmod 644 "$OUT_DIR/$SAFE_HOSTNAME.csr.pem" "$OUT_DIR/$SAFE_HOSTNAME.cert.pem" "$OUT_DIR/$SAFE_HOSTNAME.fullchain.pem"
+chmod 644 "$OUT_DIR/$SAFE_HOSTNAME.cert.pem" "$OUT_DIR/$SAFE_HOSTNAME.fullchain.pem"
 
 echo "Certificate created: $OUT_DIR/$SAFE_HOSTNAME.cert.pem"
