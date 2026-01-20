@@ -47,6 +47,16 @@ Recommended: use WSL with a Linux distribution and install OpenSSL there.
 
 ## Usage
 
+### 0) Configure org details (optional)
+
+Edit `cfg.sh` to set the default subject fields used for the CA and issued certificates:
+
+- `ORG_NAME`
+- `ORG_UNIT`
+- `ORG_COUNTRY`
+- `ORG_STATE`
+- `ORG_LOCALITY`
+
 ### 1) Initialize the CA
 
 ```bash
