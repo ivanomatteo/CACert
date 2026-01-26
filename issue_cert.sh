@@ -49,7 +49,7 @@ else
   exit 1
 fi
 
-SAFE_HOSTNAME="${HOSTNAME//\*/[star]}"
+SAFE_HOSTNAME="${HOSTNAME//\*/_star_}"
 OUT_DIR="$ROOT_DIR/issued/$SAFE_HOSTNAME"
 mkdir -p "$OUT_DIR"
 

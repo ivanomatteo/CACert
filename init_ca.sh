@@ -35,6 +35,8 @@ openssl req -config "$ROOT_DIR/openssl.cnf" \
   -key "$CA_DIR/private/ca.key.pem" \
   -passin pass:"$CA_PASS" \
   -new -x509 -days 3650 -sha256 -extensions v3_ca \
+  -addext "basicConstraints=critical,CA:TRUE" \
+  -addext "keyUsage=critical,keyCertSign,cRLSign" \
   -subj "/C=$ORG_COUNTRY/ST=$ORG_STATE/L=$ORG_LOCALITY/O=$ORG_NAME/OU=$ORG_UNIT/CN=Local Dev CA" \
   -out "$CA_DIR/certs/ca.cert.pem"
 chmod 644 "$CA_DIR/certs/ca.cert.pem"
